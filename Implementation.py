@@ -102,15 +102,20 @@ def findLine(rho, theta):
 
     return x1, x2, y1, y2
 
-def findValueofcell(line, centroids):
+def findValueofcell(line, centroids, lpos):
     ntemp = 0
 
     x1, x2, y1, y2 = findLine(line[0][0], line[0][1])
 
-    for pt in centroids:
+    for i in range(len(centroids)):
+        pt = centroids[i]
         x3 = int(pt[0])
         y3 = int(pt[1])
-        dist = findDistance(x1, x2, x3, y1, y2, y3)
+        if (dists[lpos][i] == -1):
+            dist = findDistance(x1, x2, x3, y1, y2, y3);
+            dists[lpos][i] = dist;
+        else:
+            dist = dists[lpos][i];
         if (dist < 5):
             ntemp +=1
     return ntemp
@@ -118,12 +123,15 @@ def findValueofcell(line, centroids):
 def findPrimaryCell(lines, centroids):
     n = 0
     lineP = (0,0);
-    for line in lines:
-        ntemp = findValueofcell(line, centroids)
+    pos = 0;
+    for i in range(len(lines)):
+        line = lines[i]
+        ntemp = findValueofcell(line, centroids, i)
         if (ntemp > n):
             lineP = line
             n = ntemp
-    return lineP[0]
+            pos = i;
+    return lineP[0], pos
 
 
 def findClustersize(theta, avg_height):
@@ -157,6 +165,8 @@ def findPointsofRect(rho0, rho1, theta0, theta1):
 
 def findcells(x0, x1, z0, z1, lines):
     clusCells = []
+    nonClusCells = []
+    stop = True;
 
     vertices = findPointsofRect(x0, x1, z0, z1);
 
@@ -176,10 +186,14 @@ def findcells(x0, x1, z0, z1, lines):
 
         if (not (len(i1) == 0 and len(i2) == 0 and len(i3) == 0 and len(i4) == 0)):
             clusCells.append(line)
-    return clusCells
+            stop = False;
+        else:
+            nonClusCells.append(line)
+
+    return clusCells, np.array(nonClusCells), stop
 
 
-def compareValueinStruct(cell0, cell1, centroids, x0, x1, z0, z1, n0, n1):
+def compareValueinStruct(cell0, lpos0, cell1, lpos1, centroids, x0, x1, z0, z1, n0, n1):
     vertices = findPointsofRect(x0, x1, z0, z1);
 
     rect = Polygon(vertices[0], vertices[1], vertices[2], vertices[3])
@@ -189,8 +203,8 @@ def compareValueinStruct(cell0, cell1, centroids, x0, x1, z0, z1, n0, n1):
         if (rect.encloses_point(point)):
             points.append(point)
 
-    cell0V = findValueofcell(cell0, points)
-    cell1V = findValueofcell(cell1, points)
+    cell0V = findValueofcell(cell0, points, lpos0)
+    cell1V = findValueofcell(cell1, points, lpos1)
 
     if ((n1/n0)>0.65 and cell1V>cell0V):
         return cell1[0]
@@ -242,52 +256,58 @@ def showLines(lines, DemoImg):
 
 
 rcParams['figure.figsize'] = 7, 14
-image = loadImage("test.png")
-labels, avg_height, centroids, DemoImg = findComponents(image)
-lines = findHoughLines(DemoImg, image, avg_height)
+image = loadImage("test.png");
+labels, avg_height, centroids, DemoImg = findComponents(image);
+linesO = findHoughLines(DemoImg, image, avg_height);
 
 # rho, theta = houghDomainValidation(lines, centroids, avg_height)
 
-(rho_, theta_) = findPrimaryCell(lines, centroids)
+lines = np.copy(linesO);
 
-f_clus = findClustersize(theta_, avg_height)
-print (f_clus)
+dists = np.zeros((len(lines), len(centroids))) - 1;
+dists.shape
 
-x0 = rho_ - f_clus
-x1 = rho_ + f_clus
-z0 = theta_ - math.radians(3)
-z1 = theta_ + math.radians(3)
+while (True):
+    print (str(len(lines)) + " Lines left");
+    (rho_, theta_), pos_ = findPrimaryCell(lines, centroids)
 
-clusCells = findcells(x0, x1, z0, z1, lines)
-print (len(clusCells))
-showLines(clusCells, DemoImg)
-n0 = findValueofcell([(rho_, theta_)], centroids)
-print (n0)
+    f_clus = findClustersize(theta_, avg_height)
+    print (f_clus);
 
-ntemp = 0
-rho1, theta1 = 0,0
-for i in clusCells:
-    if (i[0][0] == rho_ and i[0][1] == theta_):
-        continue
-    temp = findValueofcell(i, centroids)
-    if (temp > ntemp):
-        ntemp = temp
-        rho1 = i[0][0]
-        theta1 = i[0][1]
+    x0 = rho_ - f_clus
+    x1 = rho_ + f_clus
+    z0 = theta_ - math.radians(3)
+    z1 = theta_ + math.radians(3)
 
-vertices = findPointsofRect(x0, x1, z0, z1);
-cv.line(DemoImg, vertices[0], vertices[1], (0,0,0), 3, cv.LINE_AA);
-cv.line(DemoImg, vertices[1], vertices[2], (0,0,0), 3, cv.LINE_AA);
-cv.line(DemoImg, vertices[2], vertices[3], (0,0,0), 3, cv.LINE_AA);
-cv.line(DemoImg, vertices[3], vertices[0], (0,0,0), 3, cv.LINE_AA);
+    clusCells, lines, stop = findcells(x0, x1, z0, z1, lines);
+    if (stop):
+        break;
+    print (len(lines))
+    print (len(clusCells));
+    showLines(clusCells, DemoImg)
+    n0 = findValueofcell([(rho_, theta_)], centroids, pos_)
+    print (n0);
 
-plt.imshow(DemoImg)
+    ntemp = 0
+    rho1, theta1 = 0,0
+    lpos1 = 0;
+    for pos in range(len(clusCells)):
+        i = clusCells[pos];
+        if (i[0][0] == rho_ and i[0][1] == theta_):
+            continue
+        temp = findValueofcell(i, centroids, pos)
+        if (temp > ntemp):
+            ntemp = temp
+            rho1 = i[0][0]
+            theta1 = i[0][1]
+            lpos1 = pos;
 
-(rhon, thetan) = compareValueinStruct([(rho_, theta_)], [(rho1, theta1)], centroids, x0, x1, z0, z1, n0, ntemp)
+    (rhon, thetan) = compareValueinStruct([(rho_, theta_)], pos_, [(rho1, theta1)], lpos1, centroids, x0, x1, z0, z1, n0, ntemp)
 
-showLines([[(rhon, thetan)]], DemoImg)
+    print ((rhon, thetan));
+    showLines([[(rhon, thetan)]], DemoImg);
 
-# How to choose:
+dists# How to choose:
 # Threshold: number of points to fall on line before it is declared line
 # Minimum length of line
 # Maximum distanace between line
