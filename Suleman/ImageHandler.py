@@ -1,5 +1,7 @@
 from matplotlib import pyplot as plt
 from pylab import rcParams
+import cv2 as cv
+import math
 
 rcParams['figure.figsize'] = 7, 14
 
@@ -7,8 +9,6 @@ def loadImage(fileName):
     src = cv.imread(cv.samples.findFile(fileName), cv.IMREAD_GRAYSCALE)
     if src is None:
         print ('Error opening image!')
-    plt.imshow(src)
-    plt.show()
     return src
 
 def imshow_components(labels):

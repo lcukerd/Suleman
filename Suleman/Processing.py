@@ -1,5 +1,6 @@
 from sympy import Point, Polygon
 from sympy.geometry import Segment, Line
+from GeometryProcessing import *
 
 def findPrimaryCell(lines, centroids):
     n = 0
@@ -7,6 +8,8 @@ def findPrimaryCell(lines, centroids):
     pos = 0;
     for i in range(len(lines)):
         line = lines[i]
+        if (line[0][0] == 0 and line[0][1] == 0):
+            continue;
         ntemp = findValueofcell(line, centroids, i)
         if (ntemp > n):
             lineP = line
@@ -23,12 +26,15 @@ def findcells(x0, x1, z0, z1, lines):
     vertices = findPointsofRect(x0, x1, z0, z1);
 
     segment1 = Segment(vertices[0], vertices[1]);
-    segment2 = Segment(vertices[1], vertices[2]);
-    segment3 = Segment(vertices[2], vertices[3]);
-    segment4 = Segment(vertices[3], vertices[0]);
+    segment2 = Segment(vertices[1], vertices[3]);
+    segment3 = Segment(vertices[3], vertices[2]);
+    segment4 = Segment(vertices[2], vertices[0]);
 
     for i in range(len(lines)):
         line = lines[i];
+        if (line[0][0] == 0 and line[0][1] == 0):
+            nonClusCells.append([(0,0)])
+            continue;
         x1, x2, y1, y2 = findLine(line[0][0], line[0][1])
         lineF = Line((x1,y1),(x2,y2))
 
@@ -45,14 +51,14 @@ def findcells(x0, x1, z0, z1, lines):
         else:
             nonClusCells.append(line)
 
-    return clusCells, clusPos, np.array(nonClusCells), stop
+    return clusCells, clusPos, np.array(nonClusCells), stop, vertices
 
 
 def compareValueinStruct(cell0, lpos0, cell1, lpos1, centroids, x0, x1, z0, z1, n0, n1):
     vertices = findPointsofRect(x0, x1, z0, z1);
 
-    rect = Polygon(vertices[0], vertices[1], vertices[2], vertices[3])
-    points = []
+    rect = Polygon(vertices[0], vertices[1], vertices[3], vertices[2])
+    points = [];
 
     for point in centroids:
         if (rect.encloses_point(point)):
@@ -67,14 +73,14 @@ def compareValueinStruct(cell0, lpos0, cell1, lpos1, centroids, x0, x1, z0, z1, 
         return cell0[0] , lpos0
 
 def extDist(line, i):
-    comL = line[i-1];
+    compL = line[i-1];
     isL = larger(compL[2]);
 
     compM = line[i];
     isML = smaller(compM[2]);
-    isMR = larger(compR[2]);
+    isMR = larger(compM[2]);
 
-    comR = line[i-1];
+    compR = line[i-1];
     isR = smaller(compR[2]);
 
     return (isL.distance(isML) + isMR.distance(isR))/2;

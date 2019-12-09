@@ -1,22 +1,29 @@
-import sys
+from Processing import *
+from ImageHandler import *
+from ImageProcessing import *
+from GeometryProcessing import *
 
-image = loadImage("test.png");
+import globalVar
+
+
+image = loadImage("../Test-data/test.png");
 labels, avg_height, centroids, DemoImg, stats = findComponents(image);
 linesO = findHoughLines(DemoImg, image, avg_height);
 
 lines = np.copy(linesO);
+leftLines = len(lines);
 selLines = [];
 selStats = [];
 
-dists = np.zeros((len(lines), len(centroids))) -1;
-dists.shape
+globalVar.init(lines, centroids);
 
 while (True):
-    print (str(len(lines)) + " Lines left");
+    if (leftLines < 1):
+        break
+    print (str(leftLines) + " Lines left");
     (rho_, theta_), pos_ = findPrimaryCell(lines, centroids)
 
     f_clus = findClustersize(theta_, avg_height)
-    print (f_clus);
 
     x0 = rho_ - f_clus
     x1 = rho_ + f_clus
@@ -24,13 +31,14 @@ while (True):
     z1 = theta_ + math.radians(3)
 
     clusCells, clusPos, lines, stop = findcells(x0, x1, z0, z1, lines);
+    leftLines = leftLines - len(clusCells);
+
     if (stop):
         break;
-    print (len(lines))
-    print (len(clusCells));
+    print (str (len(clusCells)) + " Lines in this cluster" );
     showLines(clusCells, DemoImg)
     n0 = findValueofcell([(rho_, theta_)], centroids, pos_)
-    print (n0);
+    print ("Value of primary cell " + str(n0));
 
     ntemp = 0
     rho1, theta1 = 0,0
@@ -48,12 +56,10 @@ while (True):
 
     (rhon, thetan) , pos = compareValueinStruct([(rho_, theta_)], pos_, [(rho1, theta1)], lpos1, centroids, x0, x1, z0, z1, n0, ntemp)
 
-    print ((rhon, thetan));
+    print ("Chosen Line " + str((rhon, thetan)));
     selLines.append((rhon, thetan));
     selStats.append(stats[pos])
     showLines([[(rhon, thetan)]], DemoImg);
-
-dists.shape
 
 
 
@@ -66,10 +72,10 @@ data = [];
 validLines = [];
 for line in selLines:
     lineData = [];
-    x1, x2, y1, y2 = findLine(line[0][0], line[0][1])
+    x1, x2, y1, y2 = findLine(line[0], line[1])
     lineF = Line((x1,y1),(x2,y2));
     for i in range(len(selStats)):
-        stat = selStats[i]:
+        stat = selStats[i];
         centroid = centroids[i];
         labelDataCont = [];
         labelDataNCont = [];
@@ -103,6 +109,7 @@ data.append(lineData);
 
 
 for line in data:
+    print (line[0])
     line[0] = sort (line[0]);
     if len(line[0]) > 2 :
         intNeigh = (len(line[0]) - 2) * 2 + 2;
@@ -120,7 +127,7 @@ for line in data:
             if (dist < extDistance):
                 extNeigh += 1;
     if (extNeigh > intNeigh):
-        validLines(line);
+        validLines.append([line]);
 
 
 
@@ -151,3 +158,17 @@ ind = np.argsort(a, axis = 0)
 np.take_along_axis(a, ind, axis=0)
 
 showLines([[(0.0, 0)]], DemoImg);
+
+0 == 0.0
+
+
+
+globalVar.check("Secret msg");
+checkGlobal();
+
+
+if False:
+    print ("false");
+else:
+    print ("true");
+    

@@ -1,4 +1,12 @@
 import cv2 as cv
+import numpy as np
+import math
+import globalVar
+
+from Processing import *
+from ImageHandler import *
+from GeometryProcessing import *
+from matplotlib import pyplot as plt
 
 def findComponents(image):
     edgyImg = cv.Canny(image, 50, 200, None, 3)
@@ -23,11 +31,11 @@ def findComponents(image):
     return (labels, avg_height, centroids, DemoImg, stats)
 
 
-def findHoughLines(centroidImg, outputImg, height):
+def findHoughLines(centroidImg, outputImg, height, Threshold, n, m):
     dst = cv.Canny(centroidImg, 50, 200, None, 3)
     cdst = cv.cvtColor(dst, cv.COLOR_GRAY2BGR)
 
-    lines = cv.HoughLines(dst, int(height), np.pi / 180, 139, None, 50,50) #100
+    lines = cv.HoughLines(dst, int(height), np.pi / 180, Threshold, None, n, m) #100
 
     if lines is not None:
         print ("Calculated " + str(len(lines)) + " lines")
@@ -82,3 +90,7 @@ def houghDomainValidation(lines, centroids, avg_height):
             theta1 = i[0][1]
     # showLines([[(rho_, theta_)]], DemoImg)
     return compareValueinStruct([(rho_, theta_)], [(rho1, theta1)], centroids, x0, x1, z0, z1, n0, ntemp)
+
+
+def checkGlobal():
+    print (globalVar.checkmsg);
