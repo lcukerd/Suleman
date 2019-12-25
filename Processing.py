@@ -37,7 +37,7 @@ def findcells(x0, x1, z0, z1, lines):
             continue;
         x1, x2, y1, y2 = findLine(line[0][0], line[0][1])
         lineF = Line((x1,y1),(x2,y2))
-
+        # I don't think finding intersection is reqd
         i1 = lineF.intersection(segment1)
         i2 = lineF.intersection(segment2)
         i3 = lineF.intersection(segment3)
